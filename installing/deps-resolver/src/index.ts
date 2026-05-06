@@ -52,6 +52,7 @@ import {
   type GenericDependenciesGraphWithResolvedChildren,
   resolvePeers,
 } from './resolvePeers.js'
+import { applySmartAutoDedupe } from './smartAutoDedupe.js'
 import { toResolveImporter } from './toResolveImporter.js'
 import { updateLockfile } from './updateLockfile.js'
 import { updateProjectManifest } from './updateProjectManifest.js'
@@ -120,6 +121,7 @@ export async function resolveDependencies (
     dedupePeers?: boolean
     dedupeDirectDeps?: boolean
     dedupeInjectedDeps?: boolean
+    smartAutoDedupe?: boolean
     excludeLinksFromLockfile?: boolean
     preserveWorkspaceProtocol: boolean
     saveWorkspaceProtocol: 'rolling' | boolean
@@ -319,6 +321,10 @@ export async function resolveDependencies (
         }
       }
     }
+  }
+
+  if (opts.smartAutoDedupe) {
+    applySmartAutoDedupe(dependenciesGraph)
   }
 
   const newLockfile = updateLockfile({

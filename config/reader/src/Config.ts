@@ -239,6 +239,7 @@ export interface Config extends OptionsFromRootManifest {
   npmrcAuthFile?: string
   workspacePrefix?: string
   dedupeDirectDeps?: boolean
+  smartAutoDedupe?: boolean
   extendNodePath?: boolean
   gitBranchLockfile?: boolean
   globalBinDir?: string

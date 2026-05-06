@@ -69,6 +69,7 @@ export const excludedPnpmKeys = [
   'dedupe-peers',
   'dedupe-direct-deps',
   'dedupe-injected-deps',
+  'smart-auto-dedupe',
   'dev',
   'dir',
   'disallow-workspace-cycles',

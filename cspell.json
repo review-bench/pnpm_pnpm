@@ -52,6 +52,7 @@
     "cyclonedx",
     "deburr",
     "dedup",
+    "dedupable",
     "denoland",
     "denolib",
     "deptype",
