@@ -1,4 +1,4 @@
-import { expect, jest, test } from '@jest/globals'
+import { afterAll, beforeEach, expect, jest, test } from '@jest/globals'
 import { PnpmError } from '@pnpm/error'
 import type { PathExtenderReport } from '@pnpm/os.env.path-extender'
 
@@ -18,8 +18,54 @@ jest.unstable_mockModule('fs', () => {
   }
 })
 
+const actualOs = await import('node:os')
+jest.unstable_mockModule('node:os', () => {
+  const homedir = jest.fn(() => actualOs.homedir())
+  return {
+    ...actualOs,
+    default: {
+      ...actualOs,
+      homedir,
+    },
+    homedir,
+  }
+})
+
 const { addDirToEnvPath } = await import('@pnpm/os.env.path-extender')
 const { setup } = await import('@pnpm/engine.pm.commands')
+const fs = await import('node:fs')
+const os = await import('node:os')
+const path = await import('node:path')
+
+const originalFishVersion = process.env.FISH_VERSION
+const originalHome = process.env.HOME
+const originalShell = process.env.SHELL
+
+beforeEach(() => {
+  jest.clearAllMocks()
+  delete process.env.FISH_VERSION
+  process.env.SHELL = '/bin/bash'
+  jest.mocked(os.default.homedir).mockReturnValue(originalHome ?? actualOs.homedir())
+  jest.mocked(addDirToEnvPath).mockReset()
+})
+
+afterAll(() => {
+  if (originalFishVersion == null) {
+    delete process.env.FISH_VERSION
+  } else {
+    process.env.FISH_VERSION = originalFishVersion
+  }
+  if (originalShell == null) {
+    delete process.env.SHELL
+  } else {
+    process.env.SHELL = originalShell
+  }
+  if (originalHome == null) {
+    delete process.env.HOME
+  } else {
+    process.env.HOME = originalHome
+  }
+})
 
 test('setup makes no changes', async () => {
   jest.mocked(addDirToEnvPath).mockReturnValue(Promise.resolve<PathExtenderReport>({
@@ -48,6 +94,35 @@ export PNPM_HOME=dir2
 To start using pnpm, run:
 source ~/.bashrc
 `)
+})
+
+test('setup writes fish config to conf.d', async () => {
+  const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'pnpm-setup-fish-'))
+  jest.mocked(os.default.homedir).mockReturnValue(tempHome)
+  process.env.FISH_VERSION = '3.7.0'
+  try {
+    const configFile = path.join(tempHome, '.config/fish/conf.d/pnpm.fish')
+    const output = await setup.handler({ pnpmHomeDir: '/pnpm-home' })
+    expect(fs.readFileSync(configFile, 'utf8')).toBe(`set -gx PNPM_HOME "/pnpm-home"
+if not string match -q -- "$PNPM_HOME/bin" $PATH
+  set -gx PATH "$PNPM_HOME/bin" $PATH
+end
+`)
+    expect(jest.mocked(addDirToEnvPath)).not.toHaveBeenCalled()
+    expect(output).toBe(`Created ${configFile}
+
+Next configuration changes were made:
+set -gx PNPM_HOME "/pnpm-home"
+if not string match -q -- "$PNPM_HOME/bin" $PATH
+  set -gx PATH "$PNPM_HOME/bin" $PATH
+end
+
+To start using pnpm, run:
+source ${configFile}
+`)
+  } finally {
+    fs.rmSync(tempHome, { force: true, recursive: true })
+  }
 })
 
 test('setup makes changes on Windows', async () => {
