@@ -125,6 +125,31 @@ source ${configFile}
   }
 })
 
+test('setup skips existing fish config with CRLF line endings', async () => {
+  const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'pnpm-setup-fish-'))
+  jest.mocked(os.default.homedir).mockReturnValue(tempHome)
+  process.env.FISH_VERSION = '3.7.0'
+  try {
+    const configFile = path.join(tempHome, '.config/fish/conf.d/pnpm.fish')
+    fs.mkdirSync(path.dirname(configFile), { recursive: true })
+    fs.writeFileSync(configFile, [
+      'set -gx PNPM_HOME "/pnpm-home"',
+      'if not string match -q -- "$PNPM_HOME/bin" $PATH',
+      '  set -gx PATH "$PNPM_HOME/bin" $PATH',
+      'end',
+      '',
+    ].join('\r\n'))
+
+    const output = await setup.handler({ pnpmHomeDir: '/pnpm-home' })
+
+    expect(fs.readFileSync(configFile, 'utf8')).toContain('\r\n')
+    expect(jest.mocked(addDirToEnvPath)).not.toHaveBeenCalled()
+    expect(output).toBe('No changes to the environment were made. Everything is already up to date.')
+  } finally {
+    fs.rmSync(tempHome, { force: true, recursive: true })
+  }
+})
+
 test('setup makes changes on Windows', async () => {
   jest.mocked(addDirToEnvPath).mockReturnValue(Promise.resolve<PathExtenderReport>({
     oldSettings: 'export PNPM_HOME=dir1',

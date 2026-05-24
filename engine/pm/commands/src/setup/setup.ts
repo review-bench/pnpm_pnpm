@@ -197,9 +197,11 @@ end`
     }
   }
 
-  const oldContent = await fs.promises.readFile(configFile, 'utf8')
-  const oldSettings = oldContent.endsWith('\n') ? oldContent.slice(0, -1) : oldContent
-  if (oldContent === newContent || oldSettings === newSettings) {
+  const oldContent = normalizeLineEndings(await fs.promises.readFile(configFile, 'utf8'))
+  const normalizedNewContent = normalizeLineEndings(newContent)
+  const oldSettings = trimTrailingNewline(oldContent)
+  const normalizedNewSettings = trimTrailingNewline(normalizedNewContent)
+  if (oldContent === normalizedNewContent || oldSettings === normalizedNewSettings) {
     return {
       configFile: {
         path: configFile,
@@ -221,6 +223,14 @@ end`
     oldSettings,
     newSettings,
   }
+}
+
+function normalizeLineEndings (content: string): string {
+  return content.replace(/\r\n/g, '\n')
+}
+
+function trimTrailingNewline (content: string): string {
+  return content.endsWith('\n') ? content.slice(0, -1) : content
 }
 
 function renderSetupOutput (report: PathExtenderReport): string {
