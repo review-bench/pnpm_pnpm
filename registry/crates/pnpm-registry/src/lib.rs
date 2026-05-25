@@ -22,4 +22,4 @@ mod upstream;
 pub use config::Config;
 pub use error::{RegistryError, Result};
 pub use policy::{AccessRule, PackagePolicies, PackagePolicy};
-pub use server::{router, serve};
+pub use server::{router, serve, serve_listener};
