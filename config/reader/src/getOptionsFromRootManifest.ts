@@ -27,8 +27,13 @@ export type OptionsFromRootManifest = {
 
 export function getOptionsFromPnpmSettings (manifestDir: string | undefined, pnpmSettings: PnpmSettings, manifest?: ProjectManifest): OptionsFromRootManifest {
   const settings: OptionsFromRootManifest = replaceEnvInSettings(pnpmSettings)
-  if (settings.overrides) {
-    assertValidOverrides(settings.overrides)
+  if (settings.overrides || manifest?.resolutions) {
+    if (settings.overrides) assertValidOverrides(settings.overrides)
+    if (manifest?.resolutions) assertValidOverrides(manifest.resolutions)
+    settings.overrides = {
+      ...manifest?.resolutions,
+      ...settings.overrides,
+    }
     if (Object.keys(settings.overrides).length === 0) {
       delete settings.overrides
     } else if (manifest) {

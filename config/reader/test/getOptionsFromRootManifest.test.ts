@@ -85,3 +85,44 @@ test('getOptionsFromPnpmSettings() rejects non-object overrides values', () => {
     message: 'The overrides field should be an object, but got array',
   }))
 })
+
+test('getOptionsFromPnpmSettings() merges manifest resolutions with workspace overrides', () => {
+  const options = getOptionsFromPnpmSettings(process.cwd(), {
+    overrides: {
+      baz: '3.0.0',
+      bar: '2.5.0',
+    },
+  }, {
+    resolutions: {
+      foo: '1.0.0',
+      bar: '2.0.0',
+    },
+  } as any) // eslint-disable-line
+  expect(options.overrides).toStrictEqual({
+    foo: '1.0.0',
+    bar: '2.5.0',
+    baz: '3.0.0',
+  })
+})
+
+test('getOptionsFromPnpmSettings() uses manifest resolutions when no workspace overrides', () => {
+  const options = getOptionsFromPnpmSettings(process.cwd(), {}, {
+    resolutions: {
+      foo: '1.0.0',
+    },
+  } as any) // eslint-disable-line
+  expect(options.overrides).toStrictEqual({
+    foo: '1.0.0',
+  })
+})
+
+test('getOptionsFromPnpmSettings() uses workspace overrides when no manifest resolutions', () => {
+  const options = getOptionsFromPnpmSettings(process.cwd(), {
+    overrides: {
+      bar: '2.5.0',
+    },
+  })
+  expect(options.overrides).toStrictEqual({
+    bar: '2.5.0',
+  })
+})
