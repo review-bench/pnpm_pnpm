@@ -86,6 +86,27 @@ test('getOptionsFromPnpmSettings() rejects non-object overrides values', () => {
   }))
 })
 
+test('getOptionsFromPnpmSettings() rejects non-object resolutions values', () => {
+  expect(() => getOptionsFromPnpmSettings(process.cwd(), {}, {
+    resolutions: [] as unknown as Record<string, string>,
+  } as any)).toThrow(expect.objectContaining({ // eslint-disable-line
+    code: 'ERR_PNPM_INVALID_OVERRIDES',
+    message: 'The resolutions field should be an object, but got array',
+  }))
+})
+
+test('getOptionsFromPnpmSettings() replaces env variables in resolutions values', () => {
+  process.env.PNPM_TEST_VERSION = '1.0.0'
+  const options = getOptionsFromPnpmSettings(process.cwd(), {}, {
+    resolutions: {
+      foo: '${PNPM_TEST_VERSION}',
+    },
+  } as any) // eslint-disable-line
+  expect(options.overrides).toStrictEqual({
+    foo: '1.0.0',
+  })
+})
+
 test('getOptionsFromPnpmSettings() merges manifest resolutions with workspace overrides', () => {
   const options = getOptionsFromPnpmSettings(process.cwd(), {
     overrides: {
