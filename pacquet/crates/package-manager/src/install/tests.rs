@@ -6,7 +6,6 @@ use pacquet_modules_yaml::{
     read_modules_manifest, write_modules_manifest,
 };
 use pacquet_package_manifest::{DependencyGroup, PackageManifest};
-use pacquet_registry_mock::AutoMockInstance;
 use pacquet_reporter::{
     BrokenModulesLog, ContextLog, IgnoredScriptsLog, LogEvent, PackageManifestLog,
     PackageManifestMessage, ProgressLog, ProgressMessage, Reporter, SilentReporter, Stage,
@@ -14,6 +13,7 @@ use pacquet_reporter::{
 };
 use pacquet_store_dir::STORE_VERSION;
 use pacquet_testing_utils::fs::{get_all_folders, is_symlink_or_junction};
+use pacquet_testing_utils::registry::TestRegistry;
 use pacquet_workspace_state::{
     self as workspace_state, NodeLinker as WorkspaceStateNodeLinker, load_workspace_state,
 };
@@ -24,7 +24,7 @@ use text_block_macros::text_block;
 
 #[tokio::test]
 async fn should_install_dependencies() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -227,7 +227,7 @@ async fn frozen_lockfile_flag_overrides_config_lockfile_false() {
 /// <https://github.com/pnpm/pnpm/blob/1819226b51/resolving/npm-resolver/src/parseBareSpecifier.ts>
 #[tokio::test]
 async fn npm_alias_dependency_installs_under_alias_key() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -308,7 +308,7 @@ async fn npm_alias_dependency_installs_under_alias_key() {
 /// but omit the `@1.0.0` suffix to trigger the default-to-`latest` path.
 #[tokio::test]
 async fn unversioned_npm_alias_defaults_to_latest() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -829,7 +829,7 @@ async fn install_writes_workspace_state() {
 /// resolves.
 #[tokio::test]
 async fn install_optional_failing_postinstall_dep_via_registry_mock_succeeds() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -3401,7 +3401,7 @@ async fn install_rejects_invalid_minimum_release_age_exclude_pattern() {
 ///    project's `node_modules` symlink exist.
 #[tokio::test]
 async fn frozen_lockfile_gate_rejects_under_huge_minimum_release_age() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -3511,7 +3511,7 @@ async fn frozen_lockfile_gate_rejects_under_huge_minimum_release_age() {
 /// under `.`, and matching `packages:` / `snapshots:` rows.
 #[tokio::test]
 async fn fresh_install_writes_pnpm_lock_yaml_with_expected_shape() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -3593,7 +3593,7 @@ async fn fresh_install_writes_pnpm_lock_yaml_with_expected_shape() {
 /// lands in the lockfile's `devDependencies` section.
 #[tokio::test]
 async fn fresh_install_splits_dev_and_prod_dependency_sections() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -3663,7 +3663,7 @@ async fn fresh_install_splits_dev_and_prod_dependency_sections() {
 /// (`1.0.0`).
 #[tokio::test]
 async fn fresh_install_records_user_written_specifier() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -3728,7 +3728,7 @@ async fn fresh_install_records_user_written_specifier() {
 /// don't catch because they assert on the in-memory shape).
 #[tokio::test]
 async fn fresh_install_lockfile_round_trips_through_load_save_load() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -3791,7 +3791,7 @@ async fn fresh_install_lockfile_round_trips_through_load_save_load() {
 /// no `pnpm-lock.yaml` on disk, but `node_modules/` materialized.
 #[tokio::test]
 async fn fresh_install_with_lockfile_disabled_does_not_write_a_lockfile() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -3859,7 +3859,7 @@ async fn fresh_install_with_lockfile_disabled_does_not_write_a_lockfile() {
 /// --frozen-lockfile` can read it back without a parse error.
 #[tokio::test]
 async fn fresh_install_also_writes_current_lockfile_under_virtual_store() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -3941,7 +3941,7 @@ async fn fresh_install_also_writes_current_lockfile_under_virtual_store() {
 /// matching upstream pnpm's all-or-nothing `useLockfile` behavior.
 #[tokio::test]
 async fn fresh_install_with_lockfile_disabled_skips_current_lockfile_too() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
@@ -4002,7 +4002,7 @@ async fn fresh_install_with_lockfile_disabled_skips_current_lockfile_too() {
 /// sibling lands `optional: false` so the test pins both sides.
 #[tokio::test]
 async fn fresh_install_marks_optional_snapshots_in_pnpm_lock_yaml() {
-    let mock_instance = AutoMockInstance::load_or_init();
+    let mock_instance = TestRegistry::start();
 
     let dir = tempdir().unwrap();
     let store_dir = dir.path().join("pacquet-store");
